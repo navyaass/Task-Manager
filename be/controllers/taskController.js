@@ -3,15 +3,17 @@ import Task from "../models/task.model.js";
 
 
  export const addTask = async (req,res) =>{
-  const { title, description, priority, dueDate } = req.body;
-  if(!title || !description || !priority || !dueDate) {
+  const { title, description, priority, dueDate,status } = req.body;
+  if(!title || !description || !priority || !dueDate  ) {
     return res.status(400).json({ msg: "Please fill all required fields" });
   }
   const newTask = new Task({
     title:title,
     description:description,
     priority:priority,
-    dueDate:dueDate
+    dueDate:dueDate,
+    
+   
   })
 
   try{

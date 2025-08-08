@@ -13,6 +13,7 @@ const taskSchema = new mongoose.Schema({
     type:String,
     enum:['Low','High','Medium']
   },
+
   dueDate:{
     type:Date,
     required:true

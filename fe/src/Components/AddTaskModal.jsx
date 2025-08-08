@@ -1,51 +1,57 @@
-
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useDispatch, useSelector } from 'react-redux';
+import { setShowModal, setEditMode, setSelectedTask } from '../redux/taskSlice';
 
-const AddTaskModal = ({ onClose, isEdit, taskData, refreshTasks }) => {
+const AddTaskModal = ({ refreshTasks }) => {
+  const dispatch = useDispatch();
+  const isEdit = useSelector(state => state.task.isEditMode);
+  const taskData = useSelector(state => state.task.selectedTask);
   const [priorityData, setPriorityData] = useState([]);
+
   const [taskInfo, setTaskInfo] = useState({
-    title: "",
-    description: "",
-    priority: "",
-    dueDate: ""
+    title: '',
+    description: '',
+    priority: '',
+    dueDate: ''
   });
 
-  //////////// priority options/////////////////////
   useEffect(() => {
     axios.get('http://localhost:8000/api/task/getPriorityOptions')
-      .then((res) => setPriorityData(res.data))
-      .catch(error => console.log("Error loading priorities", error));
+      .then(res => setPriorityData(res.data))
+      .catch(err => console.log("Error getting priorities", err));
   }, []);
 
-  ////////////////Pre-fill form if in edit mode/////////////
   useEffect(() => {
     if (isEdit && taskData) {
       setTaskInfo({
-        title: taskData.title || "",
-        description: taskData.description || "",
-        priority: taskData.priority || "",
-        dueDate: taskData.dueDate?.substring(0, 10) || ""  
+        title: taskData.title,
+        description: taskData.description,
+        priority: taskData.priority,
+        dueDate: taskData.dueDate?.substring(0, 10)
       });
     }
   }, [isEdit, taskData]);
 
+  const handleClose = () => {
+    dispatch(setShowModal(false));
+    dispatch(setEditMode(false));
+    dispatch(setSelectedTask(null));
+  };
+
   const handleSubmit = async () => {
     try {
       if (isEdit) {
-        //////////////////// Edit task///////////////////
         await axios.put(`http://localhost:8000/api/task/updateTask/${taskData._id}`, taskInfo);
-        alert("Task updated successfully!");
+        alert("Task updated!");
       } else {
-        ///////////// Add new task//////////////////
         await axios.post('http://localhost:8000/api/task/addTask', taskInfo);
-        alert("Task added successfully!");
+        alert("Task added!");
       }
-
-      refreshTasks();    // re-fetch tasks in dashboard
-      onClose();         // close modal
-    } catch (error) {
-      console.log("Error saving task", error);
+      refreshTasks();
+      handleClose();
+    } catch (err) {
+      console.log("Error saving task", err);
     }
   };
 
@@ -53,75 +59,49 @@ const AddTaskModal = ({ onClose, isEdit, taskData, refreshTasks }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
       <div className="bg-white w-[600px] rounded-3xl p-8 shadow-lg relative">
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-4 right-4 text-gray-600 hover:text-red-500 text-xl font-bold"
         >
           X
         </button>
-
         <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
           {isEdit ? "Edit Task" : "Create New Task"}
         </h1>
 
         <div className="space-y-4">
-          <div className="flex flex-col">
-            <label className="mb-1 text-gray-600 font-medium">Title</label>
-            <input
-              type="text"
-              value={taskInfo.title}
-              onChange={(e) => setTaskInfo({ ...taskInfo, title: e.target.value })}
-              className="border border-gray-300 p-3 rounded-lg"
-              placeholder="Enter task title"
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <label className="mb-1 text-gray-600 font-medium">Description</label>
-            <textarea
-              rows="4"
-              value={taskInfo.description}
-              onChange={(e) => setTaskInfo({ ...taskInfo, description: e.target.value })}
-              className="border border-gray-300 p-3 rounded-lg resize-none"
-              placeholder="Enter task description"
-            />
-          </div>
-
-          <div className="flex flex-col">
-            <label className="mb-1 text-gray-600 font-medium">Priority</label>
-            <select
-              value={taskInfo.priority}
-              onChange={(e) => setTaskInfo({ ...taskInfo, priority: e.target.value })}
-              className="border border-gray-300 p-3 rounded-lg"
-            >
-              <option value="">-- Select Priority --</option>
-              {priorityData.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex flex-col">
-            <label className="mb-1 text-gray-600 font-medium">Due Date</label>
-            <input
-              type="date"
-              value={taskInfo.dueDate}
-              onChange={(e) => setTaskInfo({ ...taskInfo, dueDate: e.target.value })}
-              className="border border-gray-300 p-3 rounded-lg"
-            />
-          </div>
+          <input
+            type="text"
+            placeholder="Title"
+            value={taskInfo.title}
+            onChange={(e) => setTaskInfo({ ...taskInfo, title: e.target.value })}
+            className="border p-3 w-full rounded-lg"
+          />
+          <textarea
+            rows="3"
+            placeholder="Description"
+            value={taskInfo.description}
+            onChange={(e) => setTaskInfo({ ...taskInfo, description: e.target.value })}
+            className="border p-3 w-full rounded-lg"
+          />
+          <select
+            value={taskInfo.priority}
+            onChange={(e) => setTaskInfo({ ...taskInfo, priority: e.target.value })}
+            className="border p-3 w-full rounded-lg"
+          >
+            <option value="">-- Select Priority --</option>
+            {priorityData.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <input
+            type="date"
+            value={taskInfo.dueDate}
+            onChange={(e) => setTaskInfo({ ...taskInfo, dueDate: e.target.value })}
+            className="border p-3 w-full rounded-lg"
+          />
         </div>
 
         <div className="mt-6 flex justify-end gap-4">
-          <button
-            onClick={onClose}
-            className="bg-gray-300 hover:bg-gray-400 text-gray-700 font-semibold px-5 py-2 rounded-lg"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSubmit}
-            className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-2 rounded-lg"
-          >
+          <button onClick={handleClose} className="bg-gray-300 px-5 py-2 rounded-lg">Cancel</button>
+          <button onClick={handleSubmit} className="bg-blue-500 text-white px-5 py-2 rounded-lg">
             {isEdit ? "Update Task" : "Add Task"}
           </button>
         </div>
