@@ -1,7 +1,9 @@
+
 import React, { useEffect } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
-import {setTasks,
+import {
+  setTasks,
   deleteTask as deleteTaskAction,
   setShowModal,
   setEditMode,
@@ -14,16 +16,26 @@ import { useNavigate } from 'react-router-dom';
 const DashBoard = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { tasks, showModal } = useSelector(state => state.task);
-  const filterPriority = useSelector(state => state.task.filterPriority); 
+  const { tasks, showModal, filterPriority } = useSelector(state => state.task);
+
+  useEffect(()=>{
+    const token = localStorage.getItem('token');
+    if(!token){
+      navigate('/');
+    }
+  },
+  [])
+ 
+
 
   const handleFilterChange = (e) => {
     dispatch(setFilterPriority(e.target.value));
   };
 
-   const filteredTasks = filterPriority
+  const filteredTasks = filterPriority
     ? tasks.filter(task => task.priority === filterPriority)
     : tasks;
+
   const fetchTasks = async () => {
     try {
       const res = await axios.get('http://localhost:8000/api/task/getTask');
@@ -53,12 +65,12 @@ const DashBoard = () => {
   };
 
   return (
-    <div>
-      <h1 className='text-4xl  m-10 font-bold'>Task Manager</h1>
-      <h2 className='text-4xl text-center m-10 font-bold'> Task Dashboard</h2>
-      <div className='flex justify-end items-center m-4'>
+    <div className="max-w-6xl mx-auto p-6">
+      <h1 className="text-4xl font-bold text-center mb-6">Task Dashboard</h1>
+
+      <div className="flex justify-between items-center mb-6">
         <button
-          className='bg-blue-600 p-4 text-white rounded-3xl'
+          className="bg-blue-600 px-4 py-2 text-white rounded-lg hover:bg-blue-700"
           onClick={() => {
             dispatch(setSelectedTask(null));
             dispatch(setEditMode(false));
@@ -67,74 +79,88 @@ const DashBoard = () => {
         >
           Add Task
         </button>
-       
-        <button  onClick={()=>{
-          localStorage.removeItem('token');
-          navigate('/')
-        }} className='bg-blue-600 p-4 text-white rounded-3xl ml-4'>Log-out</button>
-       
+
+        <button
+          onClick={() => {
+            localStorage.removeItem('token');
+            navigate('/');
+          }}
+          className="bg-red-600 px-4 py-2 text-white rounded-lg hover:bg-red-700"
+        >
+         Log-out
+        </button>
       </div>
 
-      {showModal && <AddTaskModal refreshTasks={fetchTasks} />}
-
-      <table className="min-w-full border border-gray-200 rounded overflow-hidden">
-        <thead className="bg-gray-100">
-          <tr>
-            <th className="text-left px-4 py-2 border-b">Title</th>
-            <th className="text-left px-4 py-2 border-b">Description</th>
-            <th className="text-left px-4 py-2 border-b">Priority</th>
-            <th className="text-left px-4 py-2 border-b">Due Date</th>
-            <th className="text-left px-4 py-2 border-b">Delete</th>
-            <th className="text-left px-4 py-2 border-b">Edit</th>
-          </tr>
-        </thead>
-        <tbody>
-          {tasks.map(task => (
-            <tr key={task._id} className="hover:bg-gray-50">
-              <td className="px-4 py-2 border-b">{task.title}</td>
-              <td className="px-4 py-2 border-b">{task.description}</td>
-              <td className="px-4 py-2 border-b">{task.priority}</td>
-              <td className="px-4 py-2 border-b">{task.dueDate?.substring(0, 10)}</td>
-              <td className="px-4 py-2 border-b">
-                <button onClick={() => deleteTask(task._id)}>Delete</button>
-              </td>
-              <td className="px-4 py-2 border-b">
-                <button onClick={() => handleEdit(task)}>Edit</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* ///////////////////////////////////////////////////////////////////////// */}
-
-
-
-      {/* 🔽 Filter Dropdown */}
-      <div className="mb-4">
-        <label className="mr-2">Filter by Priority:</label>
-        <select onChange={handleFilterChange} value={filterPriority} className="border p-2 rounded">
+      
+      <div className="mb-4 flex items-center">
+        <label className="mr-2 font-medium">Filter by Priority:</label>
+        <select
+          onChange={handleFilterChange}
+          value={filterPriority}
+          className="border p-2 rounded"
+        >
           <option value="">All</option>
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
+          <option value="High" >High</option>
+          <option value="Medium" >Medium</option>
+          <option value="Low" >Low</option>
         </select>
       </div>
 
-      {/* 🔁 Show filtered tasks */}
-      {filteredTasks.map((task) => (
-        <div key={task._id} className="p-4 mb-2 border rounded">
-          <h2 className="text-lg font-semibold">{task.title}</h2>
-          <p>{task.description}</p>
-          <p>Priority: {task.priority}</p>
-        </div>
-      ))}
+      <div className="overflow-x-auto  rounded-lg border border-gray-200">
+        <table className="min-w-full bg-white">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="px-4 py-3 text-left font-semibold">Title</th>
+              <th className="px-4 py-3 text-left font-semibold">Description</th>
+              <th className="px-4 py-3 text-left font-semibold">Priority</th>
+              <th className="px-4 py-3 text-left font-semibold">Due Date</th>
+              <th className="px-4 py-3 text-left font-semibold">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredTasks.length > 0 ? (
+              filteredTasks.map(task => (
+                <tr
+                  key={task._id}
+                  className="hover:bg-gray-50 border-t border-gray-200"
+                >
+                  <td className="px-4 py-3">{task.title}</td>
+                  <td className="px-4 py-3">{task.description}</td>
+                  <td >
+                    {task.priority}
+                  </td>
+                  <td className="px-4 py-3">{task.dueDate?.substring(0, 10)}</td>
+                  <td className="px-4 py-3 flex space-x-3">
+                    <button
+                      onClick={() => handleEdit(task)}
+                      className="text-blue-600 hover:underline"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteTask(task._id)}
+                      className="text-red-600 hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan="5"
+                  className="text-center py-6 text-gray-500"
+                >
+                  No tasks found
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      
-
-      {/* ///////////////////////////////////////////////////////////////////////// */}
-
-      
+      {showModal && <AddTaskModal refreshTasks={fetchTasks} />}
     </div>
   );
 };
